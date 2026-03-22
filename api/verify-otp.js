@@ -11,31 +11,31 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { phone } = req.body;
+    const { phone, otp } = req.body;
 
-    if (!phone) {
-      return res.status(400).json({ error: "Phone number is required" });
+    if (!phone || !otp) {
+      return res.status(400).json({ error: "Phone and OTP are required" });
     }
 
-    if (!phone.startsWith("+91")) {
-      return res.status(400).json({
-        error: "Phone must include country code (e.g. +91...)",
-      });
-    }
-
-    await client.verify.v2.services(process.env.TWILIO_VERIFY_SID)
-      .verifications.create({
+    const verificationCheck = await client.verify.v2
+      .services(process.env.TWILIO_VERIFY_SID)
+      .verificationChecks.create({
         to: phone,
-        channel: "sms",
+        code: otp,
       });
+
+    if (verificationCheck.status !== "approved") {
+      return res.status(400).json({ success: false, error: "Invalid OTP" });
+    }
 
     return res.status(200).json({
       success: true,
-      message: "OTP sent successfully",
+      uid: phone,
+      message: "OTP verified successfully",
     });
 
   } catch (e) {
-    console.error("SEND OTP ERROR:", e.message);
+    console.error("VERIFY OTP ERROR:", e.message);
     return res.status(500).json({ success: false, error: e.message });
   }
 };
