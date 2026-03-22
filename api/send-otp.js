@@ -1,8 +1,8 @@
 const twilio = require("twilio");
 
 const client = twilio(
-  process.env.ACCOUNT_SID,
-  process.env.AUTH_TOKEN
+  process.env.TWILIO_ACCOUNT_SID,   // ✅ Use consistent variable names
+  process.env.TWILIO_AUTH_TOKEN
 );
 
 module.exports = async (req, res) => {
@@ -13,20 +13,18 @@ module.exports = async (req, res) => {
   try {
     const { phone } = req.body;
 
-    // 🔴 Validation
     if (!phone) {
       return res.status(400).json({ error: "Phone number is required" });
     }
 
-    // 🔴 Must be international format
     if (!phone.startsWith("+91")) {
       return res.status(400).json({
         error: "Phone must include country code (e.g. +91...)",
       });
     }
 
-    // ✅ Send OTP
-    await client.verify.v2.services(process.env.VERIFY_SID)
+    // ✅ Use Verify Service SID (VAxxxxxxxx)
+    await client.verify.v2.services(process.env.TWILIO_VERIFY_SID)
       .verifications.create({
         to: phone,
         channel: "sms",
@@ -39,10 +37,6 @@ module.exports = async (req, res) => {
 
   } catch (e) {
     console.error("SEND OTP ERROR:", e.message);
-
-    return res.status(500).json({
-      success: false,
-      error: e.message,
-    });
+    return res.status(500).json({ success: false, error: e.message });
   }
 };
